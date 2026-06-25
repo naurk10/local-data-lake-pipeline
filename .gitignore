@@ -1,0 +1,11 @@
+# Ignorar arquivos temporários do Python
+__pycache__/
+*.pyc
+
+# Ignorar ambientes virtuais se você usou venv
+.venv/
+env/
+
+# Ignorar arquivos de dados locais (caso tenha salvo algum para teste fora do MinIO)
+*.json
+*.parquet
