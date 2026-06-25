@@ -45,4 +45,9 @@ python analise_gold.py
 - Serverless Blueprint: O script de ingestão foi modularizado para ser facilmente encapsulado em uma função AWS Lambda, agendada via Amazon EventBridge.
 - Serverless Analytics: A atuação do DuckDB neste projeto simula exatamente o comportamento do Amazon Athena integrado ao AWS Glue Data Catalog, reduzindo custos de infraestrutura ao rodar queries SQL direto em arquivos do S3, sem a necessidade de manter servidores de bancos de dados ligados 24/7.
 
+# Funcionando!!:
+
+
+https://github.com/user-attachments/assets/aaf70167-fbe6-4b0b-9bcf-6a1c3e122a4e
+
 
