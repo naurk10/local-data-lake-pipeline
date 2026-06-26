@@ -4,6 +4,32 @@ Este projeto implementa e simula um ambiente produtivo de Engenharia de Dados ut
 
 ---
 
+## 🔄 Evolução do Projeto: Orquestração com Apache Airflow
+
+Para aproximar este projeto ainda mais de um ambiente produtivo real, implementei uma camada de **Orquestração de Fluxos de Trabalho (Data Pipelines)** utilizando o **Apache Airflow**.
+
+O objetivo foi eliminar a necessidade de execuções manuais dos scripts Python, garantindo que as dependências entre as camadas da Arquitetura Medalhão fossem respeitadas e monitoradas automaticamente.
+
+### 🏗️ Arquitetura do Pipeline no Airflow
+
+O fluxo foi desenhado utilizando o conceito de **DAG (Directed Acyclic Graph)**, garantindo resiliência: a camada seguinte só inicia se a anterior terminar com 100% de sucesso.
+
+
+
+* `ingestao_bronze`: Consome os dados brutos da API e grava no bucket `bronze` do MinIO.
+* `processamento_silver`: Só inicia após o sucesso da Bronze. Executa a limpeza dos dados com Pandas e converte para Parquet.
+* `analise_gold`: Executa o DuckDB para gerar as queries analíticas de negócio a partir dos arquivos Parquet consolidados.
+
+### 🛠️ Tecnologias Adicionadas
+* **Apache Airflow (v2.7.1)**: Orquestrador do pipeline.
+* **Docker Compose**: Atualizado para encapsular o Airflow Webserver e o Scheduler de forma leve rodando em conjunto com o MinIO.
+
+### 🚀 Demonstração de Uso
+*(Substitua a linha abaixo pelo seu GIF ou link do vídeo gravado)*
+![Demonstração do Airflow Rodando](https://s6.ezgif.com/tmp/ezgif-61ffa43102fce188.gif)
+
+---
+
 ## 📐 Arquitetura do Projeto
 
 O fluxo de dados foi desenhado seguindo as melhores práticas de mercado para engenharia de dados:
