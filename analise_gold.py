@@ -1,11 +1,11 @@
+import os
 import duckdb
 
-# Inicializa o DuckDB
-con = duckdb.connect()
+s3_host = "minio:9000" if os.path.exists("/opt/airflow") else "localhost:9000"
 
-# Configura o DuckDB para acessar o MinIO
-con.execute("""
-    SET s3_endpoint='localhost:9000';
+con = duckdb.connect()
+con.execute(f"""
+    SET s3_endpoint='{s3_host}';
     SET s3_access_key_id='aws_certified';
     SET s3_secret_access_key='super_senha_123';
     SET s3_use_ssl=false;

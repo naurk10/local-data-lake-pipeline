@@ -2,11 +2,16 @@ import json
 import requests
 import boto3
 from datetime import datetime
+import os
+
+# Se o caminho /opt/airflow existir, significa que estamos rodando dentro do container do Airflow.
+# Caso contrário, estamos rodando direto na máquina local.
+s3_host = "minio" if os.path.exists("/opt/airflow") else "localhost"
 
 # Conexão simulando o S3 da AWS
 s3_client = boto3.client(
     's3',
-    endpoint_url='http://localhost:9000', # O segredo está aqui!
+    endpoint_url=f'http://{s3_host}:9000',
     aws_access_key_id='aws_certified',
     aws_secret_access_key='super_senha_123'
 )

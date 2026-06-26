@@ -14,5 +14,26 @@ services:
     volumes:
       - minio_data:/data
 
+  airflow:
+    image: apache/airflow:2.7.1-python3.10
+    container_name: meu-airflow
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8080:8080"
+    command: bash -c "pip install -r /opt/airflow/scripts/requirements.txt && airflow db init && airflow users create --username admin --firstname Kaua --lastname Admin --role Admin --email admin@example.com --password admin && (airflow webserver & exec airflow scheduler)"
+    volumes:
+      # Mapeia a pasta dags para o Airflow ler o pipeline
+      - ./dags:/opt/airflow/dags
+      # Mapeia a sua pasta atual para o Airflow conseguir executar os seus scripts Python
+      - .:/opt/airflow/scripts
+    user: "${AIRFLOW_UID:-50000}:0"
+
 volumes:
   minio_data:

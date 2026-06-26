@@ -3,10 +3,17 @@ import json
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
+import os
 
+# Define o host dinâmico sem a porta para construir a URL do boto3
+s3_host = "minio" if os.path.exists("/opt/airflow") else "localhost"
+
+# Inicialização do cliente boto3 para a camada Silver
 s3_client = boto3.client(
-    's3', endpoint_url='http://localhost:9000',
-    aws_access_key_id='aws_certified', aws_secret_access_key='super_senha_123'
+    's3',
+    endpoint_url=f'http://{s3_host}:9000',
+    aws_access_key_id='aws_certified',
+    aws_secret_access_key='super_senha_123'
 )
 
 def processar_bronze_para_silver():
