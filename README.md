@@ -46,7 +46,7 @@ O fluxo de dados foi desenhado seguindo as melhores práticas de mercado para en
 - MinIO (Simulador local com compatibilidade 100% com a API do Amazon S3)
 - DuckDB (Motor de banco de dados analítico SQL em memória)
 
-## ⚙️ Como Executar o Projeto
+# ⚙️ Como Executar o Projeto
 ## Pré-requisitos:
 Ter o _Docker_ e o Python instalados na sua máquina.
 0. **Subir o ambiente do Data Lake (MinIO):**
