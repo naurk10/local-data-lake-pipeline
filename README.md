@@ -53,5 +53,5 @@ https://github.com/user-attachments/assets/aaf70167-fbe6-4b0b-9bcf-6a1c3e122a4e
 
 ||Desenvolvido com 💙 por Naurk10 ||
 
-![Mon Laferte GIF](https://media1.tenor.com/m/2Gp0EXv1Z6cAAAAC/mon-laferte-cute.gif)
+![Baki GIF](https://media1.tenor.com/m/sRIC89BPq8EAAAAC/grappler-baki-baki.gif)
 
