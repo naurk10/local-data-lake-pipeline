@@ -25,7 +25,6 @@ O fluxo foi desenhado utilizando o conceito de **DAG (Directed Acyclic Graph)**,
 * **Docker Compose**: Atualizado para encapsular o Airflow Webserver e o Scheduler de forma leve rodando em conjunto com o MinIO.
 
 ### 🚀 Demonstração de Uso
-*(Substitua a linha abaixo pelo seu GIF ou link do vídeo gravado)*
 ![Demonstração do Airflow Rodando](https://s6.ezgif.com/tmp/ezgif-61ffa43102fce188.gif)
 
 ---
