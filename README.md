@@ -43,8 +43,11 @@ A DAG do Airflow executa de forma diária (@daily) e é composta por 4 tarefas s
 2. **agregacao_clima_gold:** Aplica funções agregadas do Pandas para computar métricas de negócio diárias por cidade, como Temperatura Máxima, Temperatura Mínima e Média de Velocidade do Vento, salvando o relatório final compilado no bucket clima-gold.
 3. **consumo_clima_teste:** Simula a camada final de Analytics/BI, consumindo o arquivo Parquet enriquecido da Gold diretamente na memória e exibindo uma tabela analítica de amplitude térmica ordenada no terminal de monitoramento.
 
+## 🚀 Funcionando:
 
+<img width="800" height="500" alt="ScreenRecording2026-06-29at18 46 23-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/a19b98d1-7250-4ff5-8e45-e46b3b1b86a0" />
 
+---
 
 ## 🔄 Adição de Orquestração com Apache Airflow, 26/06:
 
