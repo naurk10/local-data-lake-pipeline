@@ -3,8 +3,50 @@
 Este projeto implementa e simula um ambiente produtivo de Engenharia de Dados utilizando a **Arquitetura Medalhão** (Bronze, Silver e Gold) de forma 100% local e gratuita. O pipeline consome dados de mercado de criptomoedas, estrutura um Data Lake utilizando a API do Amazon S3 (através do MinIO) e consolida os dados para consultas analíticas de alta performance via DuckDB.
 
 ---
+# Atualização 29/06:
 
-## 🔄 Evolução do Projeto: Orquestração com Apache Airflow
+## 🌦️ Multi-Pipeline Data Lake: Ingestão e Processamento Meteorológico Global
+
+Este projeto demonstra a construção de um ecossistema de Data Lake local de ponta a ponta (End-to-End), utilizando a **Arquitetura Medallion** (Bronze, Silver e Gold) para orquestrar, processar e analisar dados climáticos globais de múltiplos municípios em tempo real.
+
+## 🏗️ Arquitetura do Data Lake
+
+O pipeline foi desenhado seguindo as melhores práticas de Engenharia de Dados do mercado, dividindo a responsabilidade em quatro camadas lógicas monitoradas pelo Apache Airflow:
+
+```text
+[ API Open-Meteo ] 
+       │
+       ▼ (Task: Ingestao Bronze)
+[ MinIO: clima-bronze / dados_clima.json ]        <-- Camada Bronze (Dados Brutos)
+       │
+       ▼ (Task: Processamento Silver)
+[ MinIO: clima-silver / dados_clima.parquet ]     <-- Camada Silver (Dados Limpos e Tipados)
+       │
+       ▼ (Task: Agregacao Gold)
+[ MinIO: clima-gold   / resumo_clima_diario.parquet ] <-- Camada Gold (Métricas de Negócio)
+       │
+       ▼ (Task: Consumo Teste)
+[ Logs do Airflow / Visualização Analítica ]       <-- Camada de Consumo (Analytics)
+```
+## 🛠️ Tecnologias Utilizadas
+- Orquestração: Apache Airflow (Dockerizado)
+- Armazenamento de Objetos (Object Storage): MinIO (Simulando o AWS S3 de forma local)
+- Manipulação e Engenharia de Dados: Python 3 & Pandas
+- Formatos de Arquivos: JSON (Dados Brutos) e Parquet (Otimizado para Analytics com compressão colunar)
+- Infraestrutura: Docker & Docker Compose
+
+## 🚀 Detalhes do Pipeline de Dados (pipeline_data_lake_clima)
+A DAG do Airflow executa de forma diária (@daily) e é composta por 4 tarefas sequenciais:
+
+0. **ingestao_clima_bronze:** Consome dados meteorológicos atuais da API Open-Meteo para cidades globais (São Paulo, Rio de Janeiro, Manaus, Nova York, Londres e Tóquio) e armazena o JSON bruto particionado por tempo no bucket clima-bronze.
+1. **processamento_clima_silver:** Lê o JSON bruto do MinIO, faz o cruzamento geoespacial por aproximação de coordenadas para mapear os nomes reais das cidades, "achata" a estrutura aninhada de dicionários e exporta os dados limpos em formato .parquet colunar para o bucket clima-silver.
+2. **agregacao_clima_gold:** Aplica funções agregadas do Pandas para computar métricas de negócio diárias por cidade, como Temperatura Máxima, Temperatura Mínima e Média de Velocidade do Vento, salvando o relatório final compilado no bucket clima-gold.
+3. **consumo_clima_teste:** Simula a camada final de Analytics/BI, consumindo o arquivo Parquet enriquecido da Gold diretamente na memória e exibindo uma tabela analítica de amplitude térmica ordenada no terminal de monitoramento.
+
+
+
+
+## 🔄 Adição de Orquestração com Apache Airflow, 26/06:
 
 Para aproximar este projeto ainda mais de um ambiente produtivo real, implementei uma camada de **Orquestração de Fluxos de Trabalho (Data Pipelines)** utilizando o **Apache Airflow**.
 
@@ -25,7 +67,7 @@ O fluxo foi desenhado utilizando o conceito de **DAG (Directed Acyclic Graph)**,
 * **Docker Compose**: Atualizado para encapsular o Airflow Webserver e o Scheduler de forma leve rodando em conjunto com o MinIO.
 
 ### 🚀 Demonstração de Uso
-![Demonstração do Airflow Rodando](https://s6.ezgif.com/tmp/ezgif-61ffa43102fce188.gif)
+<img width="800" height="500" alt="ScreenRecording2026-06-26at16 43 04-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/bf6fcc1e-24f6-4461-b15c-d8dcec0f58dc" />
 
 ---
 
