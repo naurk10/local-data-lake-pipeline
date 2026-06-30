@@ -4,3 +4,5 @@ pandas
 pyarrow
 duckdb
 web3==6.19.0
+streamlit==1.35.0
+plotly==5.22.0
