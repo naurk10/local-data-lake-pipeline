@@ -1,124 +1,73 @@
-# Local Data Lake Analytics: Pipeline de Criptomoedas 🚀
+# 📈 Multi-Pipeline Data Lake: Crypto, Weather & Web3 Indexer
 
-Este projeto implementa e simula um ambiente produtivo de Engenharia de Dados utilizando a **Arquitetura Medalhão** (Bronze, Silver e Gold) de forma 100% local e gratuita. O pipeline consome dados de mercado de criptomoedas, estrutura um Data Lake utilizando a API do Amazon S3 (através do MinIO) e consolida os dados para consultas analíticas de alta performance via DuckDB.
+Este projeto consiste em uma plataforma de Engenharia de Dados ponta a ponta utilizando a **Arquitetura Medallion (Bronze, Silver e Gold)**. O ecossistema é totalmente orquestrado pelo **Apache Airflow** rodando em containers **Docker**, utilizando **MinIO** como Cloud Storage (S3 API alternative).
+
+O projeto comporta duas esteiras de dados paralelas:
+1. **Pipeline de Criptoativos & Clima:** Consome dados de mercado (CoinGecko) e condições climáticas mundiais.
+2. **Pipeline Web3 Indexer (Ethereum):** Conecta-se diretamente a nós da rede Ethereum utilizando `web3.py` para capturar, tratar e analisar blocos da blockchain em tempo real.
 
 ---
-# Atualização 29/06:
 
-## 🌦️ Multi-Pipeline Data Lake: Ingestão e Processamento Meteorológico Global
+## 🏗️ Arquitetura do Sistema
 
-Este projeto demonstra a construção de um ecossistema de Data Lake local de ponta a ponta (End-to-End), utilizando a **Arquitetura Medallion** (Bronze, Silver e Gold) para orquestrar, processar e analisar dados climáticos globais de múltiplos municípios em tempo real.
 
-## 🏗️ Arquitetura do Data Lake
 
-O pipeline foi desenhado seguindo as melhores práticas de Engenharia de Dados do mercado, dividindo a responsabilidade em quatro camadas lógicas monitoradas pelo Apache Airflow:
+### Fluxo dos Dados (Camadas)
+* **Camada Bronze:** Ingestão dos dados brutos em formato JSON direto das fontes (APIs e RPC Ethereum).
+* **Camada Silver:** Limpeza, tipagem de dados, remoção de colunas desnecessárias e conversão de Timestamps Unix para formato relacional. Armazenamento otimizado em **Apache Parquet**.
+* **Camada Gold:** Agregação de inteligência de negócio. No pipeline Web3, calcula médias móveis de transações e gera alertas automatizados de picos de volatilidade/congestionamento na rede.
 
-```text
-[ API Open-Meteo ] 
-       │
-       ▼ (Task: Ingestao Bronze)
-[ MinIO: clima-bronze / dados_clima.json ]        <-- Camada Bronze (Dados Brutos)
-       │
-       ▼ (Task: Processamento Silver)
-[ MinIO: clima-silver / dados_clima.parquet ]     <-- Camada Silver (Dados Limpos e Tipados)
-       │
-       ▼ (Task: Agregacao Gold)
-[ MinIO: clima-gold   / resumo_clima_diario.parquet ] <-- Camada Gold (Métricas de Negócio)
-       │
-       ▼ (Task: Consumo Teste)
-[ Logs do Airflow / Visualização Analítica ]       <-- Camada de Consumo (Analytics)
-```
+---
+
 ## 🛠️ Tecnologias Utilizadas
-- Orquestração: Apache Airflow (Dockerizado)
-- Armazenamento de Objetos (Object Storage): MinIO (Simulando o AWS S3 de forma local)
-- Manipulação e Engenharia de Dados: Python 3 & Pandas
-- Formatos de Arquivos: JSON (Dados Brutos) e Parquet (Otimizado para Analytics com compressão colunar)
-- Infraestrutura: Docker & Docker Compose
 
-## 🚀 Detalhes do Pipeline de Dados (pipeline_data_lake_clima)
-A DAG do Airflow executa de forma diária (@daily) e é composta por 4 tarefas sequenciais:
-
-0. **ingestao_clima_bronze:** Consome dados meteorológicos atuais da API Open-Meteo para cidades globais (São Paulo, Rio de Janeiro, Manaus, Nova York, Londres e Tóquio) e armazena o JSON bruto particionado por tempo no bucket clima-bronze.
-1. **processamento_clima_silver:** Lê o JSON bruto do MinIO, faz o cruzamento geoespacial por aproximação de coordenadas para mapear os nomes reais das cidades, "achata" a estrutura aninhada de dicionários e exporta os dados limpos em formato .parquet colunar para o bucket clima-silver.
-2. **agregacao_clima_gold:** Aplica funções agregadas do Pandas para computar métricas de negócio diárias por cidade, como Temperatura Máxima, Temperatura Mínima e Média de Velocidade do Vento, salvando o relatório final compilado no bucket clima-gold.
-3. **consumo_clima_teste:** Simula a camada final de Analytics/BI, consumindo o arquivo Parquet enriquecido da Gold diretamente na memória e exibindo uma tabela analítica de amplitude térmica ordenada no terminal de monitoramento.
-
-## 🚀 Funcionando:
-
-<img width="800" height="500" alt="ScreenRecording2026-06-29at18 46 23-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/a19b98d1-7250-4ff5-8e45-e46b3b1b86a0" />
+* **Orquestração:** Apache Airflow
+* **Linguagem Principal:** Python 3.10
+* **Processamento de Dados:** Pandas
+* **Armazenamento de Objetos:** MinIO (S3 API)
+* **Formato de Arquivos:** Apache Parquet & JSON
+* **Web3 Integration:** Web3.py (Conexão via endpoints RPC)
+* **Monitoramento & Observabilidade:** Telegram Bot API (Alertas automáticos via `on_failure_callback`)
+* **Infraestrutura:** Docker & Docker Compose
 
 ---
 
-## 🔄 Adição de Orquestração com Apache Airflow, 26/06:
+## 🚨 Sistema de Resiliência e Alertas
 
-Para aproximar este projeto ainda mais de um ambiente produtivo real, implementei uma camada de **Orquestração de Fluxos de Trabalho (Data Pipelines)** utilizando o **Apache Airflow**.
-
-O objetivo foi eliminar a necessidade de execuções manuais dos scripts Python, garantindo que as dependências entre as camadas da Arquitetura Medalhão fossem respeitadas e monitoradas automaticamente.
-
-### 🏗️ Arquitetura do Pipeline no Airflow
-
-O fluxo foi desenhado utilizando o conceito de **DAG (Directed Acyclic Graph)**, garantindo resiliência: a camada seguinte só inicia se a anterior terminar com 100% de sucesso.
-
-
-
-* `ingestao_bronze`: Consome os dados brutos da API e grava no bucket `bronze` do MinIO.
-* `processamento_silver`: Só inicia após o sucesso da Bronze. Executa a limpeza dos dados com Pandas e converte para Parquet.
-* `analise_gold`: Executa o DuckDB para gerar as queries analíticas de negócio a partir dos arquivos Parquet consolidados.
-
-### 🛠️ Tecnologias Adicionadas
-* **Apache Airflow (v2.7.1)**: Orquestrador do pipeline.
-* **Docker Compose**: Atualizado para encapsular o Airflow Webserver e o Scheduler de forma leve rodando em conjunto com o MinIO.
-
-### 🚀 Demonstração de Uso
-<img width="800" height="500" alt="ScreenRecording2026-06-26at16 43 04-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/bf6fcc1e-24f6-4461-b15c-d8dcec0f58dc" />
+O ecossistema conta com um mecanismo de monitoramento ativo. Utilizando o decorador `on_failure_callback` do Airflow, qualquer falha crítica de infraestrutura ou integração de API dispara instantaneamente um relatório de erro limpo para o celular do administrador através de um Bot proprietário no Telegram.
 
 ---
 
-## 📐 Arquitetura do Projeto
+## 🚀 Como Executar o Projeto
 
-O fluxo de dados foi desenhado seguindo as melhores práticas de mercado para engenharia de dados:
-  ```text
-  [API CoinGecko] ──(Python)──> [MinIO: Bronze (JSON)] ──(Pandas ETL)──> [MinIO: Silver (Parquet)] ──(DuckDB)──> [MinIO: Gold (Insights)]
-```
-# Divisão das Camadas (Arquitetura Medalhão):
-- Camada Bronze (Ingestão): O script ```ingestao_bronze.py``` consome dados brutos em formato JSON da API e armazena no MinIO utilizando particionamento por data (```crypto/ano=/mes=/dia=```), técnica essencial para otimização de buscas em nuvem.
-- Camada Silver (Processamento): O script ```processamento_silver.py``` atua como o motor de transformação. Ele lê os dados brutos, aplica tipagem de colunas, remove registros desnecessários e converte o arquivo para o formato Apache Parquet (formato colunar altamente compactado e otimizado).
-- Camada Gold (Consumo & Insights): O script ```analise_gold.py``` utiliza o DuckDB como motor analítico. Ele executa queries SQL complexas diretamente nos arquivos Parquet da camada Silver e exporta o resultado agregado (um arquivo de insights de negócio) de volta para o bucket ```gold``` do Data Lake.
+### Pré-requisitos
+* Docker & Docker Compose instalados.
+* Python 3.10+ instalado localmente (para scripts de teste rápidos).
 
-# 🛠️ Tecnologias Utilizadas
-- Python (Bibliotecas: boto3, pandas, requests, pyarrow)
-- Docker & Docker Compose (Orquestração do ambiente local)
-- MinIO (Simulador local com compatibilidade 100% com a API do Amazon S3)
-- DuckDB (Motor de banco de dados analítico SQL em memória)
+### Passos para Inicialização
 
-# ⚙️ Como Executar o Projeto
-## Pré-requisitos:
-Ter o _Docker_ e o Python instalados na sua máquina.
-0. **Subir o ambiente do Data Lake (MinIO):**
-  ```bash
-docker compose up -d
-```
-_Acesse o painel web em http://localhost:9001 (User: ```aws_certified``` | Pass: ```super_senha_123```) e crie manualmente os três buckets: ```bronze```, ```silver``` e ```gold```._
-1. **Instalar as dependências do Python:**
-  ```bash
-pip install requests boto3 pandas pyarrow duckdb
-```
-2. **Executar o Pipeline em ordem:**
-  ```bash
-python ingestao_bronze.py
-python processamento_silver.py
-python analise_gold.py
-```
-## 🧠 Paralelo com a AWS e Boas Práticas (FinOps & Arquitetura)
-- Como possuo certificação AWS, este projeto foi inteiramente concebido visando uma migração transparente para o ambiente de nuvem real:
-- Abstração com boto3: Toda a comunicação com o MinIO utiliza a biblioteca oficial da AWS. Para migrar para a produção na AWS, basta remover o parâmetro endpoint_url e apontar o código para buckets reais do Amazon S3.
-- Serverless Blueprint: O script de ingestão foi modularizado para ser facilmente encapsulado em uma função AWS Lambda, agendada via Amazon EventBridge.
-- Serverless Analytics: A atuação do DuckDB neste projeto simula exatamente o comportamento do Amazon Athena integrado ao AWS Glue Data Catalog, reduzindo custos de infraestrutura ao rodar queries SQL direto em arquivos do S3, sem a necessidade de manter servidores de bancos de dados ligados 24/7.
+1.  **Clonar o repositório:**
+    ```bash
+    git clone https://github.com/naurk10
+    ```
 
-# Funcionando!!:
+2.  **Iniciar o cluster do Airflow e MinIO:**
+    ```bash
+    docker-compose up -d --build
+    ```
 
+3.  **Acessar as interfaces:**
+    * **Apache Airflow:** `http://localhost:8080` (User/Password padrões configurados no docker-compose)
+    * **MinIO Console:** `http://localhost:9001` (Acesso para validação dos Buckets `crypto-bronze`, `crypto-silver` e `crypto-gold`)
 
-https://github.com/user-attachments/assets/aaf70167-fbe6-4b0b-9bcf-6a1c3e122a4e
+4.  **Ativar as DAGs:**
+    Acesse o painel do Airflow e ative os pipelines `pipeline_data_lake_crypto` e `pipeline_blockchain_ethereum`.
+
+---
+
+## 📈 Próximos Passos (Roadmap)
+- [ ] Plugar uma ferramenta de BI (Metabase ou Superset) apontando para os Parquets da camada Gold.
+- [ ] Implementar decodificação de Smart Contracts específicos (ex: rastrear transferências de baleias em tokens ERC-20).
 
 
 ||Desenvolvido com 💙 por Naurk10 ||
