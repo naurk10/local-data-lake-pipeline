@@ -1,6 +1,6 @@
 # 📈 Multi-Pipeline Data Lake: Crypto, Weather & Web3 Indexer
 
-Este projeto consiste em uma plataforma de Engenharia de Dados ponta a ponta utilizando a **Arquitetura Medallion (Bronze, Silver e Gold)**. O ecossistema é totalmente orquestrado pelo **Apache Airflow** rodando em containers **Docker**, utilizando **MinIO** como Cloud Storage (S3 API alternative).
+Este projeto consiste em uma plataforma de Engenharia de Dados ponta a ponta utilizando a **Arquitetura Medallion (Bronze, Silver e Gold)**. O ecossistema é totalmente orquestrado pelo **Apache Airflow** rodando em containers **Docker**, utilizando **MinIO** como Cloud Storage (S3 API alternative) e um **Dashboard Interativo em Streamlit** para consumo analítico.
 
 O projeto comporta duas esteiras de dados paralelas:
 1. **Pipeline de Criptoativos & Clima:** Consome dados de mercado (CoinGecko) e condições climáticas mundiais.
@@ -15,18 +15,28 @@ O projeto comporta duas esteiras de dados paralelas:
 ### Fluxo dos Dados (Camadas)
 * **Camada Bronze:** Ingestão dos dados brutos em formato JSON direto das fontes (APIs e RPC Ethereum).
 * **Camada Silver:** Limpeza, tipagem de dados, remoção de colunas desnecessárias e conversão de Timestamps Unix para formato relacional. Armazenamento otimizado em **Apache Parquet**.
-* **Camada Gold:** Agregação de inteligência de negócio. No pipeline Web3, calcula médias móveis de transações e gera alertas automatizados de picos de volatilidade/congestionamento na rede.
+* **Camada Gold:** Agregação de inteligência de negócio. No pipeline Web3, calcula médias de transações por bloco e gera indicadores de status de rede (identificação de picos de volatilidade). No pipeline de Clima, consolida métricas de temperatura máxima por cidade.
+
+---
+
+## 🖥️ Camada de Visualização (Streamlit Dashboard)
+
+Para expor os dados refinados da camada Gold, foi desenvolvida uma aplicação frontend proprietária em **Streamlit**. O dashboard conecta-se de forma assíncrona aos buckets do MinIO utilizando a biblioteca `boto3`, lê os arquivos Parquet estruturados e plota gráficos interativos em **Plotly**.
+
+* **Aba Ethereum Web3:** Exibe o número do último bloco indexado, o volume atual de transações na Mainnet e compara com as médias de mercado para alertar sobre congestionamentos na rede.
+* **Aba Clima:** Apresenta um panorama dinâmico de barras com a temperatura máxima registrada em tempo real por cidade monitorada.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 * **Orquestração:** Apache Airflow
+* **Frontend & BI:** Streamlit & Plotly Express
 * **Linguagem Principal:** Python 3.10
 * **Processamento de Dados:** Pandas
 * **Armazenamento de Objetos:** MinIO (S3 API)
 * **Formato de Arquivos:** Apache Parquet & JSON
-* **Web3 Integration:** Web3.py (Conexão via endpoints RPC)
+* **Web3 Integration:** Web3.py (Conexão via endpoints RPC públicos)
 * **Monitoramento & Observabilidade:** Telegram Bot API (Alertas automáticos via `on_failure_callback`)
 * **Infraestrutura:** Docker & Docker Compose
 
@@ -42,13 +52,14 @@ O ecossistema conta com um mecanismo de monitoramento ativo. Utilizando o decora
 
 ### Pré-requisitos
 * Docker & Docker Compose instalados.
-* Python 3.10+ instalado localmente (para scripts de teste rápidos).
+* Python 3.10+ instalado localmente.
 
 ### Passos para Inicialização
 
 1.  **Clonar o repositório:**
     ```bash
     git clone https://github.com/naurk10
+    cd (https://github.com/naurk10)
     ```
 
 2.  **Iniciar o cluster do Airflow e MinIO:**
@@ -56,19 +67,20 @@ O ecossistema conta com um mecanismo de monitoramento ativo. Utilizando o decora
     docker-compose up -d --build
     ```
 
-3.  **Acessar as interfaces:**
-    * **Apache Airflow:** `http://localhost:8080` (User/Password padrões configurados no docker-compose)
-    * **MinIO Console:** `http://localhost:9001` (Acesso para validação dos Buckets `crypto-bronze`, `crypto-silver` e `crypto-gold`)
+3.  **Instalar dependências locais do Dashboard:**
+    ```bash
+    pip3 install streamlit plotly boto3 pandas
+    ```
 
-4.  **Ativar as DAGs:**
-    Acesse o painel do Airflow e ative os pipelines `pipeline_data_lake_crypto` e `pipeline_blockchain_ethereum`.
+4.  **Executar o Dashboard Analítico:**
+    ```bash
+    python3 -m streamlit run app.py
+    ```
 
----
-
-## 📈 Próximos Passos (Roadmap)
-- [ ] Plugar uma ferramenta de BI (Metabase ou Superset) apontando para os Parquets da camada Gold.
-- [ ] Implementar decodificação de Smart Contracts específicos (ex: rastrear transferências de baleias em tokens ERC-20).
-
+5.  **Acessar as interfaces:**
+    * **Dashboard Streamlit:** `http://localhost:8501`
+    * **Apache Airflow:** `http://localhost:8080`
+    * **MinIO Console:** `http://localhost:9001` (Acesso para validação dos Buckets `crypto-gold`, `clima-gold`, etc.)
 
 ||Desenvolvido com 💙 por Naurk10 ||
 
