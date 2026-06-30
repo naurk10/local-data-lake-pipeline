@@ -50,6 +50,9 @@ O ecossistema conta com um mecanismo de monitoramento ativo. Utilizando o decora
 
 ## 🚀 Como Executar o Projeto
 
+https://github.com/user-attachments/assets/3a5d926f-df82-4394-98f5-bb23d77e694b
+
+
 ### Pré-requisitos
 * Docker & Docker Compose instalados.
 * Python 3.10+ instalado localmente.
