@@ -3,3 +3,4 @@ boto3
 pandas
 pyarrow
 duckdb
+web3==6.19.0
