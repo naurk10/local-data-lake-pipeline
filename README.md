@@ -1,54 +1,52 @@
-# 📈 Multi-Pipeline Data Lake: Crypto, Weather & Web3 Indexer
+# 🚀 Crypto Data Lake & Gas Predictor Pipeline
 
-Este projeto consiste em uma plataforma de Engenharia de Dados ponta a ponta utilizando a **Arquitetura Medallion (Bronze, Silver e Gold)**. O ecossistema é totalmente orquestrado pelo **Apache Airflow** rodando em containers **Docker**, utilizando **MinIO** como Cloud Storage (S3 API alternative) e um **Dashboard Interativo em Streamlit** para consumo analítico.
+Bem-vindo ao repositório do **Crypto Data Lake**! Este projeto é uma solução completa de Engenharia de Dados e Machine Learning desenvolvida para extrair, processar, armazenar e prever métricas do ecossistema de criptomoedas (com foco no Ethereum e previsão de taxas de Gas).
 
-O projeto comporta duas esteiras de dados paralelas:
-1. **Pipeline de Criptoativos & Clima:** Consome dados de mercado (CoinGecko) e condições climáticas mundiais.
-2. **Pipeline Web3 Indexer (Ethereum):** Conecta-se diretamente a nós da rede Ethereum utilizando `web3.py` para capturar, tratar e analisar blocos da blockchain em tempo real.
+## 📌 Visão Geral do Projeto
 
----
-
-## 🏗️ Arquitetura do Sistema
-
-
-
-### Fluxo dos Dados (Camadas)
-* **Camada Bronze:** Ingestão dos dados brutos em formato JSON direto das fontes (APIs e RPC Ethereum).
-* **Camada Silver:** Limpeza, tipagem de dados, remoção de colunas desnecessárias e conversão de Timestamps Unix para formato relacional. Armazenamento otimizado em **Apache Parquet**.
-* **Camada Gold:** Agregação de inteligência de negócio. No pipeline Web3, calcula médias de transações por bloco e gera indicadores de status de rede (identificação de picos de volatilidade). No pipeline de Clima, consolida métricas de temperatura máxima por cidade.
-
----
-
-## 🖥️ Camada de Visualização (Streamlit Dashboard)
-
-Para expor os dados refinados da camada Gold, foi desenvolvida uma aplicação frontend proprietária em **Streamlit**. O dashboard conecta-se de forma assíncrona aos buckets do MinIO utilizando a biblioteca `boto3`, lê os arquivos Parquet estruturados e plota gráficos interativos em **Plotly**.
-
-* **Aba Ethereum Web3:** Exibe o número do último bloco indexado, o volume atual de transações na Mainnet e compara com as médias de mercado para alertar sobre congestionamentos na rede.
-* **Aba Clima:** Apresenta um panorama dinâmico de barras com a temperatura máxima registrada em tempo real por cidade monitorada.
-
----
+O objetivo deste projeto é construir uma arquitetura de dados robusta utilizando o padrão **Medallion Architecture (Bronze, Silver e Gold)**. Os dados são orquestrados pelo Apache Airflow, armazenados localmente em um Data Lake baseado em MinIO (compatível com S3) e, na última etapa, um modelo de Machine Learning (Regressão Linear) consome os dados tratados para prever o custo do Gas do próximo bloco. O resultado é consumido por um Dashboard interativo.
 
 ## 🛠️ Tecnologias Utilizadas
 
 * **Orquestração:** Apache Airflow
-* **Frontend & BI:** Streamlit & Plotly Express
-* **Linguagem Principal:** Python 3.10
-* **Processamento de Dados:** Pandas
-* **Armazenamento de Objetos:** MinIO (S3 API)
-* **Formato de Arquivos:** Apache Parquet & JSON
-* **Web3 Integration:** Web3.py (Conexão via endpoints RPC públicos)
-* **Monitoramento & Observabilidade:** Telegram Bot API (Alertas automáticos via `on_failure_callback`)
-* **Infraestrutura:** Docker & Docker Compose
+* **Armazenamento (Data Lake):** MinIO (S3 Object Storage)
+* **Processamento de Dados:** Python, Pandas
+* **Machine Learning:** Scikit-learn (Linear Regression)
+* **Monitorização e Alertas:** Telegram Bot API
+* **Visualização:** Streamlit (Dashboard)
+* **Infraestrutura:** Docker e Docker Compose
 
----
+## 🏗️ Arquitetura do Pipeline (DAG)
 
-## 🚨 Sistema de Resiliência e Alertas
+O pipeline de dados `pipeline_blockchain_ethereum` executa diariamente e é composto pelas seguintes etapas:
 
-O ecossistema conta com um mecanismo de monitoramento ativo. Utilizando o decorador `on_failure_callback` do Airflow, qualquer falha crítica de infraestrutura ou integração de API dispara instantaneamente um relatório de erro limpo para o celular do administrador através de um Bot proprietário no Telegram.
+1. **🥉 Camada Bronze (Ingestão):** Extração de dados brutos (APIs de Criptomoedas, Blocos Ethereum) e armazenamento em formato JSON no bucket `crypto-bronze`.
+2. **🥈 Camada Silver (Processamento):** Limpeza, tipagem e estruturação dos dados brutos. Os dados são convertidos e armazenados em formato Parquet no bucket `crypto-silver`.
+3. **🥇 Camada Gold (Agregação):** Geração de indicadores de negócio e agregação de histórico de transações/gas. Os dados refinados são salvos em Parquet no bucket `crypto-gold`.
+4. **🤖 Machine Learning (Previsão de Gas):** Um modelo de Regressão Linear é treinado em tempo real com os dados da camada Gold. O modelo trata valores nulos (`NaN`), treina com as *features* históricas (total de transações, gas usado, preço do ETH) e salva a previsão para o próximo bloco no MinIO.
 
----
+## 🚨 Monitoramento
+
+O pipeline conta com um sistema de alertas integrado. Caso alguma *task* falhe (por instabilidade de API ou erro de código), uma notificação com o nome da DAG, Task e a descrição do erro é enviada automaticamente para um grupo no Telegram.
+
+## 🚀 Como Executar o Projeto Localmente
+
+### Pré-requisitos
+* Docker e Docker Compose instalados.
+* Python 3.10+ (para rodar o Streamlit localmente, se necessário).
+
+### Passo a Passo
+
+1. **Clone o repositório:**
+   ```bash
+   git clone [https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git](https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git)
+   cd SEU_REPOSITORIO
 
 ## 🚀 Como Executar o Projeto
+
+https://github.com/user-attachments/assets/a1565e68-9176-4494-a924-19107f0af0f7
+
+
 
 ### Pré-requisitos
 * Docker & Docker Compose instalados.
@@ -69,7 +67,7 @@ O ecossistema conta com um mecanismo de monitoramento ativo. Utilizando o decora
 
 3.  **Instalar dependências locais do Dashboard:**
     ```bash
-    pip3 install streamlit plotly boto3 pandas
+    pip3 install -r requirements.txt
     ```
 
 4.  **Executar o Dashboard Analítico:**
