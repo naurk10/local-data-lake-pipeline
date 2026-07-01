@@ -77,22 +77,6 @@ def pipeline_agregacao_gold():
     caminho_gold = f"relatorios/ano={data_atual.year}/mes={data_atual.month:02d}/resumo_clima_diario.parquet"
     s3_client.put_object(Bucket='clima-gold', Key=caminho_gold, Body=parquet_buffer.getvalue())
 
-# --- TASK 4: TEMPORÁRIA DE CONSUMO (Para rodar o Pandas e ver o resultado na tela) ---
-def pipeline_consumo_teste_print():
-    s3_client = boto3.client('s3', endpoint_url='http://minio:9000', aws_access_key_id='aws_certified', aws_secret_access_key='super_senha_123')
-    data_atual = datetime.now()
-    caminho_gold = f"relatorios/ano={data_atual.year}/mes={data_atual.month:02d}/resumo_clima_diario.parquet"
-    response = s3_client.get_object(Bucket='clima-gold', Key=caminho_gold)
-    
-    df_gold = pd.read_parquet(BytesIO(response['Body'].read()))
-    
-    # Fazendo o papel do SQL usando o Pandas direto no log do Airflow!
-    df_gold['amplitude_termica'] = df_gold['temp_maxima'] - df_gold['temp_minima']
-    df_resultado = df_gold[['cidade', 'temp_maxima', 'temp_minima', 'amplitude_termica', 'velocidade_vento_media']].sort_values(by='temp_maxima', ascending=False)
-    
-    print("\n📊 --- RESULTADO DO CONSUMO DA CAMADA GOLD ---")
-    print(df_resultado.to_string(index=False))
-    print("---------------------------------------------\n")
 
 # --- CONFIG DA DAG ---
 default_args = {'owner': 'kauan', 'start_date': datetime(2026, 1, 1), 'retries': 1, 'retry_delay': timedelta(minutes=2)}
