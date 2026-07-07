@@ -6,6 +6,9 @@
 [![Pytest](https://img.shields.io/badge/Pytest-Automated_Tests-green.svg)](https://docs.pytest.org/)
 [![Metabase](https://img.shields.io/badge/Metabase-BI_Dashboard-blueviolet.svg)](https://www.metabase.com/)
 
+<img width="1440" height="900" alt="Screenshot 2026-07-07 at 13 08 21" src="https://github.com/user-attachments/assets/945dd6da-ad37-43da-86f1-b5c5931052eb" />
+
+
 Este projeto implementa um pipeline de dados de ponta a ponta (End-to-End) para extração, tratamento, modelagem preditiva e visualização das taxas de gas da blockchain Ethereum, correlacionadas com dados de mercado da Binance. 
 
 O ecossistema é totalmente conteirizado via **Docker Compose**, utilizando o **Apache Airflow** como orquestrador sob a arquitetura de **Medallion Data Lake (Bronze, Silver e Gold)**, com armazenamento híbrido utilizando **MinIO (Object Storage)** e **PostgreSQL (Data Warehouse)**.
@@ -13,6 +16,9 @@ O ecossistema é totalmente conteirizado via **Docker Compose**, utilizando o **
 ---
 
 ## 🏗️ Arquitetura do Sistema
+
+<img width="1440" height="900" alt="Screenshot 2026-07-07 at 13 09 16" src="https://github.com/user-attachments/assets/e7a5f890-858a-4268-92f5-6d38bb0de6c8" />
+
 
 O pipeline segue rigorosamente os padrões de engenharia de dados moderna:
 
