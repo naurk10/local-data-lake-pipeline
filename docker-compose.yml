@@ -35,5 +35,27 @@ services:
       - .:/opt/airflow/scripts
     user: "${AIRFLOW_UID:-50000}:0"
 
+  # 🌟 MOVIDOS PARA CÁ: Agora eles estão corretamente sob o bloco "services"
+  # --- BANCO DE DADOS (Data Warehouse para a Camada Gold) ---
+  postgres_dw:
+    image: postgres:15
+    container_name: postgres_dw
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: gold_db
+    ports:
+      - "5433:5432" # Usando a porta 5433 no seu PC para evitar conflito com o Postgres do Airflow
+
+  # --- FERRAMENTA DE BI E DASHBOARDS ---
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres_dw
+
+# 📦 O bloco volumes agora contém apenas os discos virtuais declarados
 volumes:
   minio_data:

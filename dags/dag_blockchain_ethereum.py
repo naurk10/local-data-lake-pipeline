@@ -1,3 +1,6 @@
+import os 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from datetime import datetime
 from io import BytesIO
 import json
@@ -45,6 +48,53 @@ def alerta_falha_blockchain(context):
         requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", data={'chat_id': TELEGRAM_CHAT_ID, 'text': mensagem}, timeout=10)
     except Exception as e:
         print(f"Erro ao enviar alerta de falha: {e}")
+
+def validar_dados_silver(df):
+    print("🔎 [Data Quality] Iniciando validação de qualidade dos dados...")
+    
+    # 1. O número do bloco não pode ser nulo ou menor que 1
+    if df["numero"].isnull().any() or (df["numero"] < 1).any():
+        raise ValueError("🚨 CONTRATO DE DADOS VIOLADO: Número de bloco inválido ou nulo!")
+        
+    # 2. A taxa base de Gas não pode ser negativa
+    if (df["base_fee_per_gas"] < 0).any():
+        raise ValueError("🚨 CONTRATO DE DADOS VIOLADO: base_fee_per_gas negativa detectada!")
+        
+    # 3. O preço do ETH vindo da Binance não pode ser zero ou negativo
+    if (df["preco_eth_usd"] <= 0.01).any():
+        raise ValueError("🚨 CONTRATO DE DADOS VIOLADO: Preço do ETH na Binance está zerado ou inválido!")
+        
+    print("✅ [Data Quality] Dados aprovados com sucesso!")
+    return True
+
+def criar_features_e_target(df):
+    """Prepara os dados para o modelo de Machine Learning dentro da DAG"""
+    df_features = df.copy()
+    # Assume que a coluna vinda da Silver chama-se 'base_fee_per_gas'
+    df_features['target_next_gas'] = df_features['base_fee_per_gas'].shift(-1)
+    
+    dados_treino = df_features.dropna(subset=['target_next_gas']).copy()
+    dados_previsao = df_features.tail(1).copy()
+    return dados_treino, dados_previsao
+
+
+def executar_previsao_ml(dados_treino, dados_previsao):
+    """Treina o modelo e prevê a taxa do próximo bloco"""
+    from sklearn.linear_model import LinearRegression
+    
+    if dados_treino.empty or dados_previsao.empty:
+        return 0.0
+        
+    X_train = dados_treino[['base_fee_per_gas']]
+    y_train = dados_treino['target_next_gas']
+    
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    
+    X_pred = dados_previsao[['base_fee_per_gas']]
+    predicao = model.predict(X_pred)
+    
+    return max(float(predicao[0]), 0.1)
 
 # --- TASK 1A: BRONZE (Extração Web3) ---
 def extrair_bloco_blockchain():
@@ -126,6 +176,7 @@ def extrair_precos_binance():
 
 # --- TASK 2: SILVER (Unificação de Fontes) ---
 def processar_bloco_silver(**kwargs):
+
     ti = kwargs['ti']
     ultimo_bloco_num = ti.xcom_pull(task_ids='extrair_dados_bloco_ethereum')
     timestamp_precos = ti.xcom_pull(task_ids='extrair_precos_binance')
@@ -167,6 +218,10 @@ def processar_bloco_silver(**kwargs):
     df_meta['data_mineracao'] = pd.to_datetime(df_meta['timestamp'], unit='s')
     df_meta['processado_em'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
+    # 🔥 O PEDÁGIO DE QUALIDADE DE DADOS 🔥
+    # Se o df_meta quebrar alguma regra, o Airflow para aqui e não salva nada no S3!
+    validar_dados_silver(df_meta)
+    
     # Silver - Transações
     df_txs = pd.DataFrame(dados_brutos["transacoes"])
     df_txs['bloco'] = dados_brutos["numero"]
@@ -190,7 +245,7 @@ def processar_bloco_silver(**kwargs):
             
     df_tokens = pd.DataFrame(dados_tokens_processados) if dados_tokens_processados else pd.DataFrame(columns=["bloco", "tx_hash", "token", "value_usd"])
     
-    # Salva os Parquets na Silver
+    # Salva os Parquets na Silver (SÓ CHEGA AQUI SE ESTIVER TUDO CERTINHO)
     buffer_meta = BytesIO()
     df_meta.to_parquet(buffer_meta, index=False)
     s3_client.put_object(Bucket='crypto-silver', Key=f"ethereum/blocos_meta/ano={data_atual.year}/mes={data_atual.month:02d}/meta_{ultimo_bloco_num}.parquet", Body=buffer_meta.getvalue())
@@ -204,6 +259,50 @@ def processar_bloco_silver(**kwargs):
     s3_client.put_object(Bucket='crypto-silver', Key=f"ethereum/token_transfers/ano={data_atual.year}/mes={data_atual.month:02d}/tokens_{ultimo_bloco_num}.parquet", Body=buffer_tokens.getvalue())
     
     return ultimo_bloco_num
+
+# --- TASK: GOLD (Escrita Real no Data Warehouse) ---
+def processar_bloco_gold(**kwargs):
+    print("🧠 [Gold Layer] Iniciando o pipeline de Machine Learning...")
+    
+    import pandas as pd
+    import random
+    from datetime import datetime
+    from sqlalchemy import create_engine
+    
+    # 1. Simulando a leitura dos dados da Silver (com o bloco atual)
+    # Em produção, aqui você leria o Parquet limpo do MinIO
+    print("📥 [Gold Layer] Lendo dados limpos da camada Silver...")
+    preco_atual = random.uniform(20.0, 35.0) # Simulando a taxa do bloco atual
+    
+    # Criando histórico fictício para o modelo treinar
+    df_silver = pd.DataFrame({
+        'base_fee_per_gas': [random.uniform(20, 35) for _ in range(15)] + [preco_atual]
+    })
+    
+    # 2. Executar a inteligência preditiva (A função isolada que criamos)
+    dados_treino, dados_previsao = criar_features_e_target(df_silver)
+    previsao_futura = executar_previsao_ml(dados_treino, dados_previsao)
+    
+    print(f"🔮 [🤖 ML Model] Taxa Atual: {preco_atual:.2f} Gwei | Previsão Próximo Bloco: {previsao_futura:.2f} Gwei")
+    
+    # 3. CONEXÃO REAL COM O POSTGRES DW
+    # Usamos o host 'postgres_dw' pois o Airflow e o Postgres estão na mesma rede do Docker
+    engine = create_engine('postgresql://admin:admin@postgres_dw:5432/gold_db')
+    
+    # Criamos um DataFrame estruturado para salvar no banco de dados
+    df_resultado = pd.DataFrame([{
+        'timestamp': datetime.now(),
+        'gas_atual': round(preco_atual, 2),
+        'gas_previsto': round(previsao_futura, 2)
+    }])
+    
+    # Salva na tabela 'previsoes_gas'. Se a tabela não existir, o Pandas cria automaticamente!
+    df_resultado.to_sql('previsoes_gas', con=engine, if_exists='append', index=False)
+    
+    print("💾 [Gold Layer] Dados e Previsões gravados com sucesso no PostgreSQL DW!")
+    return previsao_futura
+
+
 
 # --- TASK 3: GOLD (xção de Indicadores) ---
 def agregar_dados_gold(**kwargs):
@@ -387,5 +486,11 @@ with DAG('pipeline_blockchain_ethereum', default_args=default_args, schedule_int
         provide_context=True
     )
 
-    # Nova Ordem: O pipeline extrai -> limpa na silver -> cria indicadores na gold -> roda o Machine Learning!
-    [task_extrair_bloco, task_extrair_binance] >> task_processar_silver >> task_gerar_gold >> task_prever_gas
+    task_processar_bloco_gold = PythonOperator(
+    task_id='processar_bloco_gold',
+    python_callable=processar_bloco_gold,
+    provide_context=True,
+    dag=dag,
+    )
+
+    [task_extrair_bloco, task_extrair_binance] >> task_processar_silver >> task_gerar_gold >> task_prever_gas >> task_processar_bloco_gold
